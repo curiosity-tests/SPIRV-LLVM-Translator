@@ -7,6 +7,7 @@
 # [workflow-commands]: https://docs.github.com/en/free-pro-team@latest/actions/reference/workflow-commands-for-github-actions
 
 name: Check code style
+run-name: "Check code style ${{ inputs.leg || github.event_name }} ${{ inputs.racecar_run }}"
 
 on:
   pull_request:
@@ -35,7 +36,23 @@ on:
       - '**/backport-to-branch.yml' # backport workflow
       - '**/patch-release.yaml' # patch release workflow
 
+  workflow_dispatch:
+    inputs:
+      leg:
+        description: "baseline (uninstrumented) or instrumented (under chalk/curiosity)"
+        type: choice
+        options: [instrumented, baseline]
+        default: baseline
+      profile:
+        description: "CrashOverride chalk profile"
+        type: string
+        default: curiosity-tests-racecar
+      racecar_run:
+        description: "racecar correlation token, echoed into the run name"
+        type: string
+        default: ""
 env:
+  CHALK_ON: ${{ inputs.leg == 'instrumented' }}
   # We need compile command database in order to perform clang-tidy check. So,
   # in order to perform configure step we need to setup llvm-dev package. This
   # env variable used to specify desired version of it
