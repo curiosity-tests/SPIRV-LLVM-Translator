@@ -51,6 +51,9 @@ on:
         description: "racecar correlation token, echoed into the run name"
         type: string
         default: ""
+permissions:
+  contents: read
+  id-token: write
 env:
   CHALK_ON: ${{ inputs.leg == 'instrumented' }}
   # We need compile command database in order to perform clang-tidy check. So,
@@ -64,14 +67,16 @@ jobs:
     runs-on: ubuntu-24.04
     steps:
     - name: Checkout sources
-      uses: actions/checkout@v5
+      uses: crashappsec/action-checkout@main
       with:
-        # In order to gather diff from PR we need to fetch not only the latest
-        # commit. Depth of 2 is enough, because GitHub Actions supply us with
-        # merge commit as {{ github.sha }}, i.e. the second commit is a merge
-        # base between target branch and PR
+        chalk: ${{ env.CHALK_ON }}
+        profile: ${{ inputs.profile || 'curiosity-tests-racecar' }}
+        lfs: false
         fetch-depth: 2
-
+    - name: Assert instrumentation is live
+      if: env.CHALK_ON == 'true'
+      run: |
+        test -n "${CURIOSITY_ROOT:-}" || { echo "::error::CURIOSITY_ROOT unset - observables never installed"; exit 1; }
     - name: Gather list of changes
       id: gather-list-of-changes
       run: |
